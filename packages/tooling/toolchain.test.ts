@@ -17,11 +17,18 @@ afterEach(() => {
   rmSync(fixtureDirectory, { recursive: true, force: true });
 });
 
-function checkFixture(source: string, args: string[]) {
-  const fixture = join(fixtureDirectory, 'input.ts');
+function checkFixture(
+  source: string,
+  commandArguments: string[],
+  filename = 'input.ts',
+) {
+  const fixture = join(fixtureDirectory, filename);
   writeFileSync(fixture, source);
 
-  const processOutput = spawnSync(join(root, 'node_modules/.bin/vp'), [...args, fixture], {
+  const processOutput = spawnSync(join(root, 'node_modules/.bin/vp'), [
+    ...commandArguments,
+    fixture,
+  ], {
     cwd: root,
     encoding: 'utf8',
     timeout: commandTimeoutMs,
@@ -85,7 +92,7 @@ test.each([
 });
 
 test('accepts formatted, typed source through all static checks', () => {
-  const diagnostics = checkFixture("export const name = 'Flock';\n", ['check']);
+  const diagnostics = checkFixture("export const name = 'Flock';\n", ['run', 'check']);
 
   expect(diagnostics.status).toBe(0);
 });
@@ -101,9 +108,152 @@ test('rejects TypeScript errors with lint and formatting disabled', () => {
   expect(diagnostics.output).toContain('2322');
 });
 
-test('rejects unformatted source with lint disabled', () => {
-  const diagnostics = checkFixture('export const names=["Flock"]', ['check', '--no-lint']);
+test('rejects unformatted TypeScript through the canonical check without writing', () => {
+  const source = 'export const names=["Flock"]';
+  const diagnostics = checkFixture(source, ['run', 'check']);
+
+  expect(diagnostics.status).toBe(20);
+  expect(diagnostics.output).toContain('input.ts');
+  expect(readFileSync(join(fixtureDirectory, 'input.ts'), 'utf8')).toBe(source);
+});
+
+test('formats unformatted TypeScript and then accepts the result', () => {
+  const formatted = checkFixture('export const names=["Flock"]', ['run', 'fmt']);
+  const source = readFileSync(join(fixtureDirectory, 'input.ts'), 'utf8');
+
+  expect(formatted.status).toBe(0);
+  expect(source).toBe("export const names = ['Flock'];\n");
+  expect(checkFixture(source, ['run', 'check']).status).toBe(0);
+});
+
+test('keeps JSON formatting checked by Oxfmt', () => {
+  const source = '{"name":"Flock"}';
+
+  const checked = checkFixture(
+    source,
+    ['run', 'fmt', '--check'],
+    'input.json',
+  );
+
+  const fixture = join(fixtureDirectory, 'input.json');
+
+  expect(checked.status).toBe(1);
+  expect(checked.output).toContain('input.json');
+  expect(readFileSync(fixture, 'utf8')).toBe(source);
+
+  const formatted = checkFixture(source, ['run', 'fmt'], 'input.json');
+  const formattedSource = readFileSync(fixture, 'utf8');
+
+  expect(formatted.status).toBe(0);
+  expect(formattedSource).not.toBe(source);
+  expect(JSON.parse(formattedSource)).toEqual({ name: 'Flock' });
+  expect(
+    checkFixture(
+      formattedSource,
+      ['run', 'fmt', '--check'],
+      'input.json',
+    ).status,
+  ).toBe(0);
+});
+
+test('does not format files outside the requested path', () => {
+  const otherCode = join(fixtureDirectory, 'other.ts');
+  const otherJson = join(fixtureDirectory, 'other.json');
+
+  writeFileSync(otherCode, 'export const count=1');
+  writeFileSync(otherJson, '{"count":1}');
+
+  const formatted = checkFixture('export const count=2', ['run', 'fmt']);
+
+  expect(formatted.status).toBe(0);
+  expect(readFileSync(otherCode, 'utf8')).toBe('export const count=1');
+  expect(readFileSync(otherJson, 'utf8')).toBe('{"count":1}');
+});
+
+test('rejects a missing path before formatting anything', () => {
+  const source = 'export const count=1';
+  const missing = join(fixtureDirectory, 'missing.ts');
+  const diagnostics = checkFixture(source, ['run', 'fmt', missing]);
 
   expect(diagnostics.status).toBe(1);
-  expect(diagnostics.output).toContain('input.ts');
+  expect(diagnostics.output).toContain('Formatting path does not exist');
+  expect(readFileSync(join(fixtureDirectory, 'input.ts'), 'utf8')).toBe(source);
+});
+
+test.each([
+  {
+    layout: 'three-argument calls',
+    source: `await conversationStorage.open(
+  storageAdapter,
+  extensionRegistry,
+  backgroundContext,
+);
+`,
+  },
+  {
+    layout: 'four-argument calls',
+    source: `submitAgentEvent(
+  definition,
+  conversation,
+  event,
+  backgroundContext,
+);
+`,
+  },
+  {
+    layout: 'object destructuring',
+    source: `const {
+  definition,
+  conversation,
+  event,
+  backgroundContext,
+} = submission;
+`,
+  },
+  {
+    layout: 'array destructuring',
+    source: `const [
+  definition,
+  conversation,
+  event,
+  backgroundContext,
+] = submission;
+`,
+  },
+  {
+    layout: 'object literals',
+    source: `const event = {
+  id: 'message-1',
+  type: 'message',
+  content: 'Hello',
+};
+`,
+  },
+  {
+    layout: 'boolean conditions',
+    source: `if (
+  enabled &&
+  ready &&
+  connected
+) {
+  start();
+}
+`,
+  },
+])('preserves vertical $layout through repeated formatting', ({ source }) => {
+  const fixture = join(fixtureDirectory, 'input.ts');
+  const first = checkFixture(source, ['run', 'fmt']);
+
+  expect(first.status).toBe(0);
+  expect(readFileSync(fixture, 'utf8')).toBe(source);
+
+  const second = checkFixture(source, ['run', 'fmt']);
+
+  expect(second.status).toBe(0);
+  expect(readFileSync(fixture, 'utf8')).toBe(source);
+
+  const checked = checkFixture(source, ['run', 'fmt', '--check']);
+
+  expect(checked.status).toBe(0);
+  expect(readFileSync(fixture, 'utf8')).toBe(source);
 });

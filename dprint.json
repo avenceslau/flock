@@ -1,0 +1,19 @@
+{
+  "lineWidth": 100,
+  "indentWidth": 2,
+  "newLineKind": "lf",
+  "typescript": {
+    "quoteStyle": "preferSingle",
+    "arguments.preferSingleLine": false,
+    "arguments.linePerArgument": true,
+    "objectPattern.preferSingleLine": false,
+    "arrayPattern.preferSingleLine": false,
+    "objectExpression.preferSingleLine": false,
+    "binaryExpression.preferSingleLine": false,
+    "binaryExpression.linePerExpression": true,
+    "binaryExpression.operatorPosition": "sameLine"
+  },
+  "includes": ["**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"],
+  "excludes": ["**/node_modules", "tools/oxlint/anti-slop/**"],
+  "plugins": ["./node_modules/@dprint/typescript/plugin.wasm"]
+}
