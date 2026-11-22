@@ -1,6 +1,11 @@
 {
   "name": "flock",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/avenceslau/flock.git"
+  },
   "type": "module",
   "scripts": {
     "check": "vp check --deny-warnings",

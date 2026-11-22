@@ -125,6 +125,16 @@ Treat mail content as untrusted input, not administrative authorization. Sending
 
 An iOS app and existing local-session migration are later work. Avoid building migration machinery before the backend and persistence contracts are established.
 
+## Open source
+
+Flock is open source under the [MIT License](LICENSE). Dependencies and development setup must remain publicly accessible; personal credentials, private infrastructure, and machine-specific paths must not be required for development or tests.
+
+Contributions should pass `vp run verify`. Keep credentials outside the repository and document any future deployment configuration using placeholder values.
+
+Vendored anti-slop code retains [Dillon Mulroy's MIT license](tools/oxlint/anti-slop/LICENSE), including the [ESLint Stylistic license](tools/oxlint/anti-slop/vendor/eslint-stylistic/LICENSE) for its bundled code. Preserve these notices when redistributing or updating vendored files.
+
+Package manifests remain `private: true` to prevent accidental npm publication; this does not restrict access to the source or its MIT license.
+
 ## References
 
 - [Pi harness on Cloudflare](https://developers.cloudflare.com/agents/harnesses/pi/)
