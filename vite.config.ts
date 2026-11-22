@@ -50,7 +50,7 @@ export default defineConfig({
     },
   },
   fmt: {
-    ignorePatterns,
+    ignorePatterns: [...ignorePatterns, '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'],
     singleQuote: true,
   },
 });

@@ -6,7 +6,7 @@ Flock is in the design stage. The monorepo toolchain is configured; the agent ru
 
 ## Development
 
-Use [Vite+](https://viteplus.dev/) (`vp`) for dependency management, workspace tasks, linting, formatting, and type checking. The workspace uses pnpm underneath Vite+, with its version pinned in `package.json` and Node pinned in `.node-version`.
+Use [Vite+](https://viteplus.dev/) (`vp`) for dependency management, workspace tasks, linting, and type checking. Run formatting through the shared `fmt` task. The workspace uses pnpm underneath Vite+, with its version pinned in `package.json` and Node pinned in `.node-version`.
 
 ```sh
 vp install --frozen-lockfile
@@ -16,8 +16,10 @@ vp run verify
 `vp run verify` runs static checks and the workspace tests. Individual commands:
 
 ```sh
-vp check --deny-warnings
-vp fmt
+vp run check
+vp run fmt
+vp run fmt --check
+vp run fmt packages/tooling/toolchain.test.ts
 vp run typecheck
 vp run -r test
 vp run --filter @flock/tooling test
@@ -30,7 +32,9 @@ Install the global Vite+ CLI following its official instructions. If only the pr
 - `apps/*`: deployable backends and clients; no application scaffold yet.
 - `packages/tooling`: integration tests for the configured lint rules, formatter, and type checker.
 - `tools/oxlint/anti-slop`: vendored upstream rules and license.
-- `vite.config.ts`: shared repository-wide lint and format settings.
+- `vite.config.ts`: shared repository-wide lint settings and non-JS/TS formatting.
+- `dprint.json`: JS/TS formatting that preserves vertical layouts.
+- `tools/format.ts`: the shared formatting and formatting-check command.
 - `tsconfig.base.json`: shared strict TypeScript settings; packages select their own runtime types and included files.
 
 Add dependencies to the package that uses them. Define app and library tasks in their own packages and run them through `vp run`; use workspace dependencies for task ordering. Vite+ is the task runner—there is no Turbo layer.
@@ -38,6 +42,16 @@ Add dependencies to the package that uses them. Define app and library tasks in 
 ### Code checks
 
 Vite+ `1.7.0` supplies Oxlint `1.94.0`, Oxfmt `0.79.0`, and tsrs `7.1.0-beta.tsrs2`. Both type-aware linting and type checking are enabled. No separate TypeScript compiler is installed.
+
+### Formatting
+
+`vp run fmt` uses dprint `0.65.0` with its TypeScript plugin `0.101.0` for JavaScript and TypeScript, including JSX/TSX. Oxfmt handles other supported files, including JSON and Markdown. The plugin is installed from the frozen pnpm lockfile; formatting does not download it from a separate plugin URL. pnpm explicitly disables dprint's optional install hook; the CLI resolves its platform binary at runtime. Both formatters keep vendored rules untouched and respect `.gitignore`.
+
+Keep multi-argument calls, four-field destructuring, three-field objects, and multi-clause conditions vertically readable. dprint preserves their deliberate line breaks instead of collapsing them; it does not automatically expand every construct by argument or field count. No formatter-ignore directives or artificial wrappers are needed.
+
+Use `vp run fmt --check` for a read-only formatting check, or pass existing file/directory paths to either mode. `vp run check` runs this shared check before lint and type checks. Bare `vp fmt`/`vp check` do not cover JS/TS formatting; editor formatters for those files should use `dprint.json`, not Oxfmt.
+
+### Lint rules
 
 All 18 generic [Dillon Mulroy anti-slop rules](https://github.com/dmmulroy/anti-slop) and all eight `@durability/lint` rules are errors, along with Oxlint's accumulating-spread rule. Effect rules are not enabled. Vendored source is excluded from linting and formatting; application and tooling source is not exempted.
 
