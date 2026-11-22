@@ -45,7 +45,7 @@ Vite+ `1.7.0` supplies Oxlint `1.94.0`, Oxfmt `0.79.0`, and tsrs `7.1.0-beta.tsr
 
 ### Formatting
 
-`vp run fmt` uses dprint `0.65.0` with its TypeScript plugin `0.101.0` for JavaScript and TypeScript, including JSX/TSX. Oxfmt handles other supported files, including JSON and Markdown. The plugin is installed from the frozen pnpm lockfile; formatting does not download it from a separate plugin URL. Both formatters keep vendored rules untouched and respect `.gitignore`.
+`vp run fmt` uses dprint `0.65.0` with its TypeScript plugin `0.101.0` for JavaScript and TypeScript, including JSX/TSX. Oxfmt handles other supported files, including JSON and Markdown. The plugin is installed from the frozen pnpm lockfile; formatting does not download it from a separate plugin URL. pnpm explicitly disables dprint's optional install hook; the CLI resolves its platform binary at runtime. Both formatters keep vendored rules untouched and respect `.gitignore`.
 
 Keep multi-argument calls, four-field destructuring, three-field objects, and multi-clause conditions vertically readable. dprint preserves their deliberate line breaks instead of collapsing them; it does not automatically expand every construct by argument or field count. No formatter-ignore directives or artificial wrappers are needed.
 
