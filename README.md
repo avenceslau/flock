@@ -2,7 +2,50 @@
 
 Persistent, programmable Pi agents with distinct personalities, accessible from any client.
 
-Flock is in the design stage. This repository records the intended architecture; it does not yet contain an implementation.
+Flock is in the design stage. The monorepo toolchain is configured; the agent runtime is not implemented yet.
+
+## Development
+
+Use [Vite+](https://viteplus.dev/) (`vp`) for dependency management, workspace tasks, linting, formatting, and type checking. The workspace uses pnpm underneath Vite+, with its version pinned in `package.json` and Node pinned in `.node-version`.
+
+```sh
+vp install --frozen-lockfile
+vp run verify
+```
+
+`vp run verify` runs static checks and the workspace tests. Individual commands:
+
+```sh
+vp check --deny-warnings
+vp fmt
+vp run typecheck
+vp run -r test
+vp run --filter @flock/tooling test
+```
+
+Install the global Vite+ CLI following its official instructions. If only the project-local CLI is available, use `pnpm exec vp` in place of `vp`. Initial setup on a machine without Vite+ can use `pnpm install --frozen-lockfile` to bootstrap that local CLI.
+
+### Workspace layout
+
+- `apps/*`: deployable backends and clients; no application scaffold yet.
+- `packages/tooling`: integration tests for the configured lint rules, formatter, and type checker.
+- `tools/oxlint/anti-slop`: vendored upstream rules and license.
+- `vite.config.ts`: shared repository-wide lint and format settings.
+- `tsconfig.base.json`: shared strict TypeScript settings; packages select their own runtime types and included files.
+
+Add dependencies to the package that uses them. Define app and library tasks in their own packages and run them through `vp run`; use workspace dependencies for task ordering. Vite+ is the task runner—there is no Turbo layer.
+
+### Code checks
+
+Vite+ `1.7.0` supplies Oxlint `1.94.0`, Oxfmt `0.79.0`, and tsrs `7.1.0-beta.tsrs2`. Both type-aware linting and type checking are enabled. No separate TypeScript compiler is installed.
+
+All 18 generic [Dillon Mulroy anti-slop rules](https://github.com/dmmulroy/anti-slop) and all eight `@durability/lint` rules are errors, along with Oxlint's accumulating-spread rule. Effect rules are not enabled. Vendored source is excluded from linting and formatting; application and tooling source is not exempted.
+
+Anti-slop is pinned to an upstream commit recorded in `tools/oxlint/anti-slop/UPSTREAM.md`. Its `@oxlint/plugins` dependency must match Vite+'s bundled Oxlint version. Upstream now recommends Cloudflare's successor config; this repository deliberately uses Dillon's rules.
+
+`@durability/lint@0.4.0` declares an Oxlint `1.73.0` peer. A narrowly scoped workspace override resolves that peer to Vite+'s `1.94.0`; integration tests verify every Durability rule against the actual CLI. Recheck this compatibility when upgrading either package rather than relaxing peer checks globally.
+
+CI installs from the frozen lockfile and runs `vp run verify`.
 
 ## Goals
 

@@ -1,0 +1,23 @@
+{
+  "name": "flock",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "vp check --deny-warnings",
+    "fmt": "vp fmt",
+    "lint": "vp lint --deny-warnings",
+    "typecheck": "vp check --no-fmt --no-lint",
+    "test": "vp run -r test",
+    "verify": "vp run check && vp run test"
+  },
+  "devDependencies": {
+    "@durability/lint": "0.4.0",
+    "@oxlint/plugins": "1.94.0",
+    "@types/node": "26.6.6",
+    "vite-plus": "1.7.0"
+  },
+  "engines": {
+    "node": ">=26.0.0"
+  },
+  "packageManager": "pnpm@11.17.0"
+}

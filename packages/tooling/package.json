@@ -1,0 +1,12 @@
+{
+  "name": "@flock/tooling",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vp test run"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "vite-plus": "1.7.0"
+  }
+}
